@@ -1,4 +1,4 @@
-module github.com/obh/rmq.git
+module github.com/obh/rmq/v1
 
 go 1.17
 

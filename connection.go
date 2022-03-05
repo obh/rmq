@@ -60,19 +60,14 @@ type redisConnection struct {
 	openQueues []Queue
 }
 
-// // OpenConnection opens and returns a new connection
+// OpenConnection opens and returns a new connection
 func OpenConnection(tag string, network string, address string, db int, errChan chan<- error) (Connection, error) {
-	//redisClient := redis.NewClient(&redis.Options{Network: network, Addr: address, DB: db})
-	addresses := make([]string, 1)
-	addresses = append(addresses, address)
-	redisClient := redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs: addresses,
-	})
+	redisClient := redis.NewClient(&redis.Options{Network: network, Addr: address, DB: db})
 	return OpenConnectionWithRedisClient(tag, redisClient, errChan)
 }
 
 // OpenConnectionWithRedisClient opens and returns a new connection
-func OpenConnectionWithRedisClient(tag string, redisClient *redis.ClusterClient, errChan chan<- error) (Connection, error) {
+func OpenConnectionWithRedisClient(tag string, redisClient redis.Cmdable, errChan chan<- error) (Connection, error) {
 	return OpenConnectionWithRmqRedisClient(tag, RedisWrapper{redisClient}, errChan)
 }
 
@@ -86,7 +81,7 @@ func OpenConnectionWithTestRedisClient(tag string, errChan chan<- error) (Connec
 // the RedisClient interface yourself
 func OpenConnectionWithRmqRedisClient(tag string, redisClient RedisClient, errChan chan<- error) (Connection, error) {
 	name := fmt.Sprintf("%s-%s", tag, RandomString(6))
-
+	fmt.Println("-----> Here --> queues key --> " + strings.Replace(connectionQueuesTemplate, phConnection, name, 1))
 	connection := &redisConnection{
 		Name:          name,
 		heartbeatKey:  strings.Replace(connectionHeartbeatTemplate, phConnection, name, 1),
@@ -95,11 +90,11 @@ func OpenConnectionWithRmqRedisClient(tag string, redisClient RedisClient, errCh
 		errChan:       errChan,
 		heartbeatStop: make(chan chan struct{}, 1),
 	}
-
+	fmt.Println("redisConnection was set by library")
 	if err := connection.updateHeartbeat(); err != nil { // checks the connection
 		return nil, err
 	}
-
+	fmt.Println("did update heartbeat run? --> YES")
 	// add to connection set after setting heartbeat to avoid race with cleaner
 	if _, err := redisClient.SAdd(connectionsKey, name); err != nil {
 		return nil, err

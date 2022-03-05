@@ -60,14 +60,19 @@ type redisConnection struct {
 	openQueues []Queue
 }
 
-// OpenConnection opens and returns a new connection
+// // OpenConnection opens and returns a new connection
 func OpenConnection(tag string, network string, address string, db int, errChan chan<- error) (Connection, error) {
-	redisClient := redis.NewClient(&redis.Options{Network: network, Addr: address, DB: db})
+	//redisClient := redis.NewClient(&redis.Options{Network: network, Addr: address, DB: db})
+	addresses := make([]string, 1)
+	addresses = append(addresses, address)
+	redisClient := redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs: addresses,
+	})
 	return OpenConnectionWithRedisClient(tag, redisClient, errChan)
 }
 
 // OpenConnectionWithRedisClient opens and returns a new connection
-func OpenConnectionWithRedisClient(tag string, redisClient *redis.Client, errChan chan<- error) (Connection, error) {
+func OpenConnectionWithRedisClient(tag string, redisClient *redis.ClusterClient, errChan chan<- error) (Connection, error) {
 	return OpenConnectionWithRmqRedisClient(tag, RedisWrapper{redisClient}, errChan)
 }
 
